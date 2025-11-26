@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Square Payment</title>
+
+  <!-- Square payment library -->
+  <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #f5f6f7;
+    }
+    #card-container {
+      width: 400px;
+      margin-bottom: 20px;
+    }
+    #card-button {
+      background: #0070f3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>💳 Square Payment Demo</h2>
+  <div id="card-container"></div>
+  <button id="card-button" type="button">Pay</button>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      const payments = Square.payments(
+        'sandbox-sq0idb-56eePxoSg4O0DyfEbywoYQ', // ✅ Sandbox App ID
+        'LPRRD21ESFT6D' // ✅ Sandbox Location ID
+      );
+
+      let card;
+      async function initializeCard(payments) {
+        card = await payments.card();
+        await card.attach('#card-container');
+      }
+
+      await initializeCard(payments);
+
+      document.getElementById('card-button').addEventListener('click', async function () {
+        try {
+          const tokenResult = await card.tokenize();
+
+          if (tokenResult.status === 'OK') {
+            console.log('✅ Token:', tokenResult.token);
+
+            // Send token + amount to backend
+            const response = await fetch('/payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sourceId: tokenResult.token,
+                amount: 100, // amount in cents ($1.00)
+              }),
+            });
+
+            const result = await response.json();
+            console.log('💰 Payment Result:', result);
+
+            if (result.payment) {
+              alert('✅ Payment Successful! ID: ' + result.payment.id);
+            } else {
+              alert('❌ Payment Failed: ' + JSON.stringify(result));
+            }
+          } else {
+            alert('⚠️ Card tokenization failed!');
+          }
+        } catch (error) {
+          console.error('⚠️ Error:', error);
+          alert('Something went wrong.');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
