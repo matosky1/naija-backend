@@ -83,7 +83,7 @@ const price = priceMoney ? Number(priceMoney) / 100 : 0;
 // ✅ Main payment route
 app.post("/api/square/charge", async (req, res) => {
   try {
-    const { sourceId, amount, postalCode } = req.body;
+    const { sourceId, amount, postalCode, discountCode } = req.body;
 
     const postalCodeRegex = /^[A-Za-z0-9\s\-]{3,10}$/;
     if (postalCode && !postalCodeRegex.test(postalCode)) {
@@ -98,13 +98,20 @@ app.post("/api/square/charge", async (req, res) => {
       environment: Environment.Production,
     });
 
-    console.log("🔐 Payment request:", { sourceId, amount, postalCode });
+    // ✅ Apply discount if code matches
+    let finalAmount = amount;
+    if (discountCode && discountCode.trim().toUpperCase() === "SAVE5") {
+      finalAmount = amount - 5; // subtract 5 CAD
+      if (finalAmount < 0) finalAmount = 0; // safety check
+    }
+
+    console.log("🔐 Payment request:", { sourceId, amount, finalAmount, postalCode, discountCode });
 
     const response = await client.paymentsApi.createPayment({
       sourceId,
       idempotencyKey: Date.now().toString(),
       amountMoney: {
-        amount: Math.round(amount * 100), // Convert to cents
+        amount: Math.round(finalAmount * 100), // Convert to cents
         currency: "CAD",
       },
       locationId: process.env.LOCATION_ID,
@@ -129,6 +136,7 @@ app.post("/api/square/charge", async (req, res) => {
     });
   }
 });
+
 
 app.use("/api/shipping", require("./routes/shipping"));
 
