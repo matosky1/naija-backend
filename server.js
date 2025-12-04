@@ -100,10 +100,12 @@ app.post("/api/square/charge", async (req, res) => {
 
     // ✅ Apply discount if code matches
     let finalAmount = amount;
-    if (discountCode && discountCode.trim().toUpperCase() === "SAVE5") {
-      finalAmount = amount - 5; // subtract 5 CAD
-      if (finalAmount < 0) finalAmount = 0; // safety check
-    }
+    if (discountCode.trim().toUpperCase() === 'Newbie123') {
+  setDiscountValue(5);
+} else {
+  setDiscountValue(0);
+}
+
 
     console.log("🔐 Payment request:", { sourceId, amount, finalAmount, postalCode, discountCode });
 
