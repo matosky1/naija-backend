@@ -85,6 +85,10 @@ app.post("/api/square/charge", async (req, res) => {
   try {
     const { sourceId, amount, postalCode, discountCode } = req.body;
 
+
+      console.log("🧾 Incoming payment:", { amount, discountCode });
+
+
     const postalCodeRegex = /^[A-Za-z0-9\s\-]{3,10}$/;
     if (postalCode && !postalCodeRegex.test(postalCode)) {
       return res.status(400).json({
@@ -100,13 +104,14 @@ app.post("/api/square/charge", async (req, res) => {
 
     // ✅ Apply discount if code matches
    // ✅ Apply discount if code matches
+   
 let finalAmount = amount;
 if (discountCode && discountCode.trim().toUpperCase() === 'NEWBIE123'.toUpperCase()) {
   finalAmount = amount - 5; // subtract 5 CAD
   if (finalAmount < 0) finalAmount = 0; // safety check
 }
 
-
+       console.log("💸 Final amount after discount:", finalAmount);
 
     console.log("🔐 Payment request:", { sourceId, amount, finalAmount, postalCode, discountCode });
 
