@@ -85,6 +85,59 @@ router.get("/products", async (req, res) => {
   }
 });
 
+// Add this AFTER your products endpoint
+router.post("/charge", async (req, res) => {
+  console.log("🟢 [Square] Processing payment...");
+  
+  try {
+    const { sourceId, amount, currency = 'USD', email, shippingAddress } = req.body;
+
+    // Create payment request
+    const paymentRequest = {
+      sourceId,
+      amountMoney: {
+        amount: BigInt(Math.round(amount * 100)), // Convert to cents
+        currency
+      },
+      idempotencyKey: `payment_${Date.now()}_${Math.random()}`, // Unique key
+      autocomplete: true
+    };
+
+    // Process payment
+    const { result } = await client.paymentsApi.createPayment(paymentRequest);
+    
+    // 🔧 FIX: Convert BigInt to strings before sending response
+    const safeResult = {
+      ...result,
+      payment: {
+        ...result.payment,
+        amountMoney: {
+          amount: String(result.payment.amountMoney.amount), // Convert BigInt
+          currency: result.payment.amountMoney.currency
+        },
+        totalMoney: result.payment.totalMoney ? {
+          amount: String(result.payment.totalMoney.amount), // Convert BigInt
+          currency: result.payment.totalMoney.currency
+        } : undefined,
+        // Convert any other BigInt fields if they exist
+        appFeeMoney: result.payment.appFeeMoney ? {
+          amount: String(result.payment.appFeeMoney.amount),
+          currency: result.payment.appFeeMoney.currency
+        } : undefined
+      }
+    };
+
+    console.log("✅ Payment successful:", safeResult.payment.id);
+    res.json(safeResult);
+
+  } catch (error) {
+    console.error("💥 Payment failed:", error.message);
+    res.status(400).json({ 
+      error: error.message || "Payment processing failed",
+      details: error.errors || []
+    });
+  }
+});
 
 
 
