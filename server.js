@@ -5,6 +5,8 @@ const fs = require("fs");
 const { Client, Environment } = require("square");
 require("dotenv").config();
 
+BigInt.prototype.toJSON = function () {  return this.toString();};
+
 const app = express();
 const PORT = process.env.PORT || 8000;
 
