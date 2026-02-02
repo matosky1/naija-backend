@@ -126,24 +126,15 @@ app.post("/api/square/charge", async (req, res) => {
 
     const { payment, errors } = response.result || {};
     
-    // ✅ FIX: Only send email if payment was successful
+    // ✅ Send email via Resend if payment was successful
     if (payment && payment.status === 'COMPLETED') {
-      // Send shipping info email after successful payment
       try {
-        const nodemailer = require("nodemailer");
-        const transporter = nodemailer.createTransport({
-          host: process.env.EMAIL_HOST,
-          port: Number(process.env.EMAIL_PORT || 465),
-          secure: true,
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
+        const { Resend } = require('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
 
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: process.env.BUSINESS_EMAIL || "your-business@gmail.com", // ✅ Use env variable
+        await resend.emails.send({
+          from: 'NAIJA Store <onboarding@resend.dev>', // Use Resend's test domain
+          to: process.env.BUSINESS_EMAIL || "your-business@gmail.com",
           subject: "📦 New Order - Payment Confirmed",
           text: `
 ✅ Payment Confirmed!
@@ -163,10 +154,9 @@ Postal Code: ${shippingAddress.postalCode || 'N/A'}
 Country: ${shippingAddress.country || 'N/A'}
 ` : 'No shipping address provided'}
           `
-        };
+        });
 
-        await transporter.sendMail(mailOptions);
-        console.log("✅ Order confirmation email sent");
+        console.log("✅ Order confirmation email sent via Resend");
       } catch (emailError) {
         console.error("⚠️ Failed to send email (but payment succeeded):", emailError.message);
         // Don't fail the entire request if email fails
